@@ -1,34 +1,33 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import UploadFile, File
 import fitz  
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-@app.get("/test")
-def test():
-    return {"status": "Backend connected"}
+@app.get("/")
+def home():
+    return {"message": "AI Resume Matcher API is running!"}
 
-
-
-@app.post("/upload-resume")
-async def upload_resume(file: UploadFile = File(...)):
-    pdf_bytes = await file.read()
-    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-
-    text = ""
+@app.post("/extract-text")
+async def extract_text(file: UploadFile = File(...)):
+    # Read the uploaded PDF file
+    data = await file.read()
+    
+    # Open the PDF with PyMuPDF
+    doc = fitz.open(stream=data, filetype="pdf")
+    full_text = ""
+    
     for page in doc:
-        text += page.get_text()
-
+        full_text += page.get_text()
+        
     return {
-        "message": "Resume uploaded",
-        "text_preview": text[:500]  
+        "filename": file.filename,
+        "text_content": full_text[:500] + "..."  # Returning first 500 chars to test
     }
-
